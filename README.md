@@ -9,5 +9,9 @@ UIForge is a server-driven UI ecosystem designed to allow interfaces to be dynam
 - **Database (PostgreSQL):** Stores templates and data.
 - **Local and Remote Components:** Visible within the component hierarchy.
 
+
+
+To see the entire proposal, check the [docs](./docs).
+
 ## License
 This project is licensed under the [MIT License](LICENSE).

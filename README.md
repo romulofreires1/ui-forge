@@ -1,4 +1,4 @@
-# UIForge
+# (Em Construção / Fase de proposta) UIForge
 
 ## Overview
 UIForge is a server-driven UI ecosystem designed to allow interfaces to be dynamically generated through templates provided by the server.

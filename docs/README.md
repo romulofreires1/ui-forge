@@ -13,58 +13,198 @@ UIForge is a server-driven UI ecosystem designed to dynamically generate interfa
    - The API provides templates to the renderer and fetches data from both local and remote sources, as defined in the templates.
    - Each component may have its own `dataSource` (local or remote), and the data is returned in a `data` field, which is accessible to all components in the hierarchy.
 
-3. **PostgreSQL Database:**
-   - The database stores the templates and metadata necessary for the system.
-   - The templates are versioned and stored in JSON format.
-
-4. **Local and Remote Data Sources:**
+3. **Local and Remote Data Sources:**
    - Components can define their own data sources, which can either be fetched from the server (local) or from an external API (remote).
    - Data from the `dataSource` is aggregated in the `data` field of the template and is visible to all components below the hierarchy.
 
-5. **Template Management Interface:**
+4. **Template Management Interface:**
    - An intuitive interface allows product and business users to create and manage templates.
    - The interface includes a visual editor, version control, and a preview tool for testing templates.
 
-## Data Flow
-1. The client requests a specific template from the API.
-2. The API retrieves the template from the database.
-3. The API fetches data from both local and remote sources as defined in the template.
-4. The template and its corresponding data are returned to the client.
-5. The renderer interprets the template and renders the UI.
+## Templates
 
-### Template Example:
+### General Template:
+This template is used as a base structure for dynamic UI rendering. It defines multiple components and how data from local and remote sources is used to render the UI.
+
 ```json
 {
-  "templateId": "homepage_v1",
+  "templateId": "generalTemplate",
+  "version": "1.0",
+  "platform": "web",
   "components": [
     {
-      "type": "header",
-      "title": "Welcome",
-      "dataSource": { "type": "local", "path": "/local/user" }
+      "type": "Header",
+      "props": {
+        "title": "{context.datasources.headerSource.headerTitle}",
+        "style": {
+          "backgroundColor": "#4CAF50",
+          "color": "#FFFFFF",
+          "padding": "10px",
+          "textAlign": "center"
+        }
+      },
+      "dataSource": {
+        "id": "headerSource",
+        "type": "local",
+        "value": {
+          "headerTitle": "Welcome"
+        }
+      }
     },
     {
-      "type": "list",
-      "dataSource": { "type": "remote", "url": "https://api.example.com/products" }
+      "type": "Footer",
+      "props": {
+        "text": "Thank you for using our service!",
+        "style": {
+          "backgroundColor": "#4CAF50",
+          "color": "#FFFFFF",
+          "padding": "10px",
+          "textAlign": "center"
+        }
+      },
+      "dataSource": {
+        "id": "footerSource",
+        "type": "local",
+        "value": {
+          "footerText": "Thank you for visiting our store!"
+        }
+      }
     }
-  ],
-  "data": {
-    "user": { "name": "John Doe" },
-    "products": [...]
-  }
+  ]
 }
 ```
 
-## PostgreSQL Database Schema
+### ExperimentRenderer Template:
+The **ExperimentRenderer** component is specifically designed for A/B testing scenarios. It allows you to define multiple variants and a default variant, and renders one based on predefined logic.
 
-### Template Table Schema:
-```sql
-CREATE TABLE templates (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255),
-    version INTEGER,
-    template JSONB,
-    created_at TIMESTAMP DEFAULT NOW()
-);
+```json
+{
+  "templateId": "experimentRendererTemplate",
+  "version": "1.0",
+  "platform": "web",
+  "components": [
+    {
+      "type": "ExperimentRenderer",
+      "props": {
+        "variants": {
+          "default": {
+            "type": "Text",
+            "props": {
+              "text": "This is the default variant",
+              "style": {
+                "fontSize": "18px",
+                "color": "#333",
+                "marginBottom": "10px"
+              }
+            }
+          },
+          "variantA": {
+            "type": "Text",
+            "props": {
+              "text": "This is Variant A",
+              "style": {
+                "fontSize": "18px",
+                "color": "#FF5733",
+                "marginBottom": "10px"
+              }
+            }
+          },
+          "variantB": {
+            "type": "Text",
+            "props": {
+              "text": "This is Variant B",
+              "style": {
+                "fontSize": "18px",
+                "color": "#33FF57",
+                "marginBottom": "10px"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+### DynamicRenderer Template:
+The **DynamicRenderer** component is a more general-purpose version of the **ExperimentRenderer**. While the **ExperimentRenderer** is focused on A/B testing, the **DynamicRenderer** allows you to render different UI components dynamically based on a `type` value from a remote or local data source. Additionally, a default option is provided in case no value matches.
+
+```json
+{
+  "templateId": "dynamicRendererTemplate",
+  "version": "1.0",
+  "platform": "web",
+  "components": [
+    {
+      "type": "DynamicRenderer",
+      "props": {
+        "fieldToCheck": "{context.datasources.typeSource.fieldToCheck}",
+        "types": {
+          "SP": {
+            "type": "Text",
+            "props": {
+              "text": "You selected São Paulo",
+              "style": {
+                "fontSize": "18px",
+                "color": "#333"
+              }
+            }
+          },
+          "RJ": {
+            "type": "Text",
+            "props": {
+              "text": "You selected Rio de Janeiro",
+              "style": {
+                "fontSize": "18px",
+                "color": "#FF5733"
+              }
+            }
+          },
+          "MG": {
+            "type": "Text",
+            "props": {
+              "text": "You selected Minas Gerais",
+              "style": {
+                "fontSize": "18px",
+                "color": "#33FF57"
+              }
+            }
+          },
+          "default": {
+            "type": "Text",
+            "props": {
+              "text": "No matching region selected",
+              "style": {
+                "fontSize": "18px",
+                "color": "#999"
+              }
+            }
+          }
+        }
+      },
+      "dataSources": [
+        {
+          "id": "ufListSource",
+          "type": "remote",
+          "url": "https://api.example.com/ufs",
+          "contextMapping": {
+            "headers": "{context.request.headers}",
+            "queryParams": "{context.request.queryParams}",
+            "body": "{context.request.body}"
+          }
+        },
+        {
+          "id": "typeSource",
+          "type": "local",
+          "value": {
+            "fieldToCheck": "uf"
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## Use Cases
@@ -90,28 +230,5 @@ The business team wants to quickly change the UI layout for a seasonal promotion
 - **API Response:** The template is retrieved from the UIForge database, and the remote data source fetches the featured products.
 - **Renderer:** The app displays the new promotional layout immediately, without needing a new release.
 
-## Project Structure
-
-```bash
-UIForge/
-│
-├── api/                  # Código relacionado à API
-│   ├── src/              # Código-fonte da API
-│   └── README.md         # Instruções da API
-│
-├── db/                   # Scripts do banco de dados
-│   ├── migration.sql      # Script de criação das tabelas
-│   └── README.md         # Informações do banco de dados
-│
-├── docs/                 # Documentação do projeto
-│   ├── architecture.md   # Explicação da arquitetura
-│   └── use-cases.md      # Exemplos de casos de uso
-│
-├── templates/            # Exemplos de templates (JSON)
-│   └── homepage.json
-│
-└── README.md             # Visão geral do projeto
-```
-
 ## Conclusion
-UIForge provides a flexible, dynamic, and scalable way to manage UI templates from the server side, allowing business teams to make rapid changes to the UI without the need for client-side updates. Its integration with PostgreSQL for storing templates and the ability to fetch data from both local and remote sources provides a powerful tool for dynamic UIs.
+UIForge provides a flexible, dynamic, and scalable way to manage UI templates from the server side, allowing business teams to make rapid changes to the UI without the need for client-side updates. The system's use of local and remote data sources, coupled with a powerful template management interface, offers a robust solution for modern UI development.
